@@ -64,8 +64,23 @@ async def get_member_photo(photo_name: str):
 
 
 @router.get("/members/", response_model=List[schemas.Member])
-async def read_members(skip: int = 0, limit: int = 10, db: Session = Depends(get_db)):
-    return await crud.get_members(db=db, skip=skip, limit=limit)
+async def read_members(
+    skip: int = 0, limit: int = 10, role: str = None, db: Session = Depends(get_db)
+):
+    if role:
+        return await crud.get_members_by_role(db=db, role=role, skip=skip, limit=limit)
+    else:
+        return await crud.get_members(db=db, skip=skip, limit=limit)
+
+
+async def get_members_by_role(db: Session, role: str, skip: int = 0, limit: int = 10):
+    return (
+        db.query(models.Member)
+        .filter(models.Member.role == role)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
 
 
 # Create a blog

@@ -79,6 +79,16 @@ async def get_members(db: Session, skip: int = 0, limit: int = 10):
     )
 
 
+async def get_members_by_role(db: Session, role: str, skip: int = 0, limit: int = 10):
+    return (
+        db.query(models.Member)
+        .filter(models.Member.role == role)
+        .offset(skip)
+        .limit(limit)
+        .all()
+    )
+
+
 async def create_blog(db: Session, blog: schemas.BlogCreate):
     if blog.photo:
         file_extension = blog.photo.filename.split(".")[-1]
