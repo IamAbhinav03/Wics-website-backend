@@ -1,15 +1,16 @@
 import os
+from dotenv import load_dotenv, dotenv_values
 from typing import List
 from sqlalchemy.orm import Session, joinedload
+from vercel_storage import blob
 from fastapi import UploadFile
 from . import models, schemas
 
 
-# Directory to store uploaded photos
-UPLOAD_DIR = "static/uploaded_photos"
+# load_dotenv(dotenv_path=".env.development.local") #testing
+load_dotenv(dotenv_path=".env")  # production
 
-# Ensure the upload directory exists
-os.makedirs(UPLOAD_DIR, exist_ok=True)
+BLOB_READ_WRITE_TOKEN = os.getenv("BLOB_READ_WRITE_TOKEN")
 
 
 # CRUD operations for Department
@@ -43,14 +44,19 @@ async def create_member(
 ):
     if member.photo:
         file_extension = member.photo.filename.split(".")[-1]
-        file_name = f"{member.name}.{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, file_name)
-        with open(file_path, "wb") as file:
-            file.write(member.photo.file.read())
-        photo_uri = file_name
+        file_name = f"uploaded_images/{member.name}.{file_extension}"
+        # file_path = os.path.join(UPLOAD_DIR, file_name)
+        #     with open(file_path, "wb") as file:
+        #         file.write(member.photo.file.read())
+        #     photo_uri = file_name
+        # else:
+        #     # If no photo is uploaded, use placeholder image
+        #     photo_uri = "static/uploaded_photos/placeholder.jpg"
+        # print(type(member.photo))
+        resp = blob.put(pathname=file_name, body=member.photo.file.read(), options={})
+        photo_uri = resp.get("url")
     else:
-        # If no photo is uploaded, use placeholder image
-        photo_uri = "static/uploaded_photos/placeholder.jpg"
+        photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"  # url to placeholder image
 
     member.photo_uri = photo_uri
     db_member = models.Member(**member.model_dump(exclude={"photo", "department_ids"}))
