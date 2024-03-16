@@ -1,16 +1,22 @@
 import os
-from dotenv import load_dotenv, dotenv_values
+from dotenv import load_dotenv
 from typing import List
+from mimetypes import guess_type
 from sqlalchemy.orm import Session, joinedload
-from vercel_storage import blob
+
+# from vercel_storage import blob
+import requests
 from fastapi import UploadFile
 from . import models, schemas
 
 
-# load_dotenv(dotenv_path=".env.development.local") #testing
-# load_dotenv(dotenv_path=".env.development.local")  # production
+load_dotenv(dotenv_path=".env.development.local")  # testing
+# load_dotenv(dotenv_path=".env")  # production
 
-# BLOB_READ_WRITE_TOKEN = os.getenv("BLOB_READ_WRITE_TOKEN")
+BLOB_READ_WRITE_TOKEN = os.getenv("BLOB_READ_WRITE_TOKEN")
+VERCEL_API_URL = "https://blob.vercel-storage.com"
+API_VERSION = "4"
+DEFAULT_CACHE_AGE = 365 * 24 * 60 * 60
 
 
 # CRUD operations for Department
@@ -35,6 +41,54 @@ async def get_departments(db: Session, skip: int = 0, limit: int = 10):
 # CRUD operations for Member
 
 
+# async def create_member(
+#     db: Session,
+#     # member: dict,
+#     member: schemas.MemberCreate,
+#     # department_ids: List[int],
+#     # photo: UploadFile = None,
+# ):
+#     if member.photo:
+#         file_extension = member.photo.filename.split(".")[-1]
+#         file_name = f"uploaded_images/{member.name}.{file_extension}"
+#         # file_path = os.path.join(UPLOAD_DIR, file_name)
+#         #     with open(file_path, "wb") as file:
+#         #         file.write(member.photo.file.read())
+#         #     photo_uri = file_name
+#         # else:
+#         #     # If no photo is uploaded, use placeholder image
+#         #     photo_uri = "static/uploaded_photos/placeholder.jpg"
+#         # print(type(member.photo))
+#         resp = blob.put(
+#             pathname=file_name,
+#             body=member.photo.file.read(),
+#             options={"token": os.environ.get("BLOB_READ_WRITE_TOKEN")},
+#         )
+#         photo_uri = resp.get("url")
+#     else:
+#         photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"  # url to placeholder image
+
+#     member.photo_uri = photo_uri
+#     db_member = models.Member(**member.model_dump(exclude={"photo", "department_ids"}))
+#     for department_id in member.department_ids:
+#         department = (
+#             db.query(models.Department)
+#             .filter(models.Department.id == department_id)
+#             .first()
+#         )
+#         if department:
+#             db_member.departments.append(department)
+
+#     db.add(db_member)
+#     db.commit()
+#     db.refresh(db_member)
+#     return db_member
+
+
+def guess_mime_type(url):
+    return guess_type(url, strict=False)[0]
+
+
 async def create_member(
     db: Session,
     # member: dict,
@@ -53,12 +107,25 @@ async def create_member(
         #     # If no photo is uploaded, use placeholder image
         #     photo_uri = "static/uploaded_photos/placeholder.jpg"
         # print(type(member.photo))
-        resp = blob.put(
-            pathname=file_name,
-            body=member.photo.file.read(),
-            options={"token": os.environ.get("BLOB_READ_WRITE_TOKEN")},
+        # resp = blob.put(
+        #     pathname=file_name,
+        #     body=member.photo.file.read(),
+        #     options={"token": os.environ.get("BLOB_READ_WRITE_TOKEN")},
+        # )
+        # photo_uri = resp.get("url")
+        headers = {
+            "access": "public",
+            "authorization": f"Bearer {BLOB_READ_WRITE_TOKEN}",
+            "x-api-version": API_VERSION,
+            "x-content-type": guess_mime_type(file_name),
+            "x-cache-control-max-age": str(DEFAULT_CACHE_AGE),
+        }
+        resp = requests.put(
+            f"{VERCEL_API_URL}/{file_name}",
+            data=member.photo.file.read(),
+            headers=headers,
         )
-        photo_uri = resp.get("url")
+        photo_uri = resp.json().get("url")
     else:
         photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"  # url to placeholder image
 
