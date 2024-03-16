@@ -8,9 +8,9 @@ from . import models, schemas
 
 
 # load_dotenv(dotenv_path=".env.development.local") #testing
-load_dotenv(dotenv_path=".env")  # production
+# load_dotenv(dotenv_path=".env.development.local")  # production
 
-BLOB_READ_WRITE_TOKEN = os.getenv("BLOB_READ_WRITE_TOKEN")
+# BLOB_READ_WRITE_TOKEN = os.getenv("BLOB_READ_WRITE_TOKEN")
 
 
 # CRUD operations for Department
@@ -53,7 +53,11 @@ async def create_member(
         #     # If no photo is uploaded, use placeholder image
         #     photo_uri = "static/uploaded_photos/placeholder.jpg"
         # print(type(member.photo))
-        resp = blob.put(pathname=file_name, body=member.photo.file.read(), options={})
+        resp = blob.put(
+            pathname=file_name,
+            body=member.photo.file.read(),
+            options={"token": os.environ.get("BLOB_READ_WRITE_TOKEN")},
+        )
         photo_uri = resp.get("url")
     else:
         photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"  # url to placeholder image
