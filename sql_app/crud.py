@@ -1,11 +1,8 @@
 import os
-from dotenv import load_dotenv
-from typing import List
 from mimetypes import guess_type
-from sqlalchemy.orm import Session, joinedload
-
-# from vercel_storage import blob
+from dotenv import load_dotenv
 import requests
+from sqlalchemy.orm import Session, joinedload
 from fastapi import UploadFile
 from . import models, schemas
 
@@ -38,94 +35,65 @@ async def get_departments(db: Session, skip: int = 0, limit: int = 10):
     )
 
 
-# CRUD operations for Member
+async def update_department(
+    db: Session, department_id: int, department: schemas.DepartmentCreate
+):
+    db_department = (
+        db.query(models.Department)
+        .filter(models.Department.id == department_id)
+        .first()
+    )
+    if db_department:
+        for key, value in department.model_dump.items():
+            setattr(db_department, key, value)
+        db.commit()
+        db.refresh(db_department)
+    return db_department
 
 
-# async def create_member(
-#     db: Session,
-#     # member: dict,
-#     member: schemas.MemberCreate,
-#     # department_ids: List[int],
-#     # photo: UploadFile = None,
-# ):
-#     if member.photo:
-#         file_extension = member.photo.filename.split(".")[-1]
-#         file_name = f"uploaded_images/{member.name}.{file_extension}"
-#         # file_path = os.path.join(UPLOAD_DIR, file_name)
-#         #     with open(file_path, "wb") as file:
-#         #         file.write(member.photo.file.read())
-#         #     photo_uri = file_name
-#         # else:
-#         #     # If no photo is uploaded, use placeholder image
-#         #     photo_uri = "static/uploaded_photos/placeholder.jpg"
-#         # print(type(member.photo))
-#         resp = blob.put(
-#             pathname=file_name,
-#             body=member.photo.file.read(),
-#             options={"token": os.environ.get("BLOB_READ_WRITE_TOKEN")},
-#         )
-#         photo_uri = resp.get("url")
-#     else:
-#         photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"  # url to placeholder image
-
-#     member.photo_uri = photo_uri
-#     db_member = models.Member(**member.model_dump(exclude={"photo", "department_ids"}))
-#     for department_id in member.department_ids:
-#         department = (
-#             db.query(models.Department)
-#             .filter(models.Department.id == department_id)
-#             .first()
-#         )
-#         if department:
-#             db_member.departments.append(department)
-
-#     db.add(db_member)
-#     db.commit()
-#     db.refresh(db_member)
-#     return db_member
+async def delete_department(db: Session, department_id: int):
+    db_department = (
+        db.query(models.Department)
+        .filter(models.Department.id == department_id)
+        .first()
+    )
+    if db_department:
+        db.delete(department_id)
+        db.commit()
+        return True
+    return False
 
 
 def guess_mime_type(url):
     return guess_type(url, strict=False)[0]
 
 
+def photo_upload(file: UploadFile, file_name: str, upload_folder: str):
+    file_extension = file.filename.split(".")[-1]
+    file_name = f"{upload_folder}/{file_name}.{file_extension}"
+    headers = {
+        "access": "public",
+        "authorization": f"Bearer {BLOB_READ_WRITE_TOKEN}",
+        "x-api-version": API_VERSION,
+        "x-content-type": guess_mime_type(file_name),
+        "x-cache-control-max-age": str(DEFAULT_CACHE_AGE),
+    }
+    resp = requests.put(
+        f"{VERCEL_API_URL}/{file_name}",
+        data=file.read(),
+        headers=headers,
+    )
+    return resp.json().get("url")
+
+
 async def create_member(
     db: Session,
-    # member: dict,
     member: schemas.MemberCreate,
-    # department_ids: List[int],
-    # photo: UploadFile = None,
 ):
     if member.photo:
-        file_extension = member.photo.filename.split(".")[-1]
-        file_name = f"uploaded_images/{member.name}.{file_extension}"
-        # file_path = os.path.join(UPLOAD_DIR, file_name)
-        #     with open(file_path, "wb") as file:
-        #         file.write(member.photo.file.read())
-        #     photo_uri = file_name
-        # else:
-        #     # If no photo is uploaded, use placeholder image
-        #     photo_uri = "static/uploaded_photos/placeholder.jpg"
-        # print(type(member.photo))
-        # resp = blob.put(
-        #     pathname=file_name,
-        #     body=member.photo.file.read(),
-        #     options={"token": os.environ.get("BLOB_READ_WRITE_TOKEN")},
-        # )
-        # photo_uri = resp.get("url")
-        headers = {
-            "access": "public",
-            "authorization": f"Bearer {BLOB_READ_WRITE_TOKEN}",
-            "x-api-version": API_VERSION,
-            "x-content-type": guess_mime_type(file_name),
-            "x-cache-control-max-age": str(DEFAULT_CACHE_AGE),
-        }
-        resp = requests.put(
-            f"{VERCEL_API_URL}/{file_name}",
-            data=member.photo.file.read(),
-            headers=headers,
+        photo_uri = photo_upload(
+            file=member.photo, file_name=member.name, upload_folder="uploaded_images"
         )
-        photo_uri = resp.json().get("url")
     else:
         photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"  # url to placeholder image
 
@@ -156,6 +124,13 @@ async def get_members(db: Session, skip: int = 0, limit: int = 10):
     )
 
 
+# async def update_member(db: Session, member_id: int, member: schemas.MemberCreate):
+#     db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
+#     if member.photo
+#     for key, value in member.model_dump.items():
+#         setattr(db_member, key, value)
+
+
 async def get_members_by_role(db: Session, role: str, skip: int = 0, limit: int = 10):
     return (
         db.query(models.Member)
@@ -168,15 +143,12 @@ async def get_members_by_role(db: Session, role: str, skip: int = 0, limit: int 
 
 async def create_blog(db: Session, blog: schemas.BlogCreate):
     if blog.photo:
-        file_extension = blog.photo.filename.split(".")[-1]
-        file_name = f"{blog.title}.{file_extension}"
-        file_path = os.path.join(UPLOAD_DIR, file_name)
-        with open(file_path, "wb") as file:
-            file.write(blog.photo.file.read())
-        photo_uri = file_name
+        photo_uri = photo_upload(
+            file=blog.photo, file_name=blog.title, upload_folder="blog_cover_images"
+        )
     else:
         # If no photo is uploaded, use placeholder image
-        photo_uri = "static/uploaded_photos/placeholder.jpg"
+        photo_uri = "https://akmiccoer19irir6.public.blob.vercel-storage.com/uploaded_images/placeholder-LfUscThhRnJRb0vT6hqOrhgNptslJC.png"
     blog.cover_image_uri = photo_uri
     db_blog = models.Blog(**blog.model_dump(exclude={"photo"}))
     db.add(db_blog)
