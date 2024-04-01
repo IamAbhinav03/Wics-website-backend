@@ -23,12 +23,12 @@ class Department(DepartmentBase):
 class MemberBase(BaseModel):
     name: str
     role: Optional[str] = None
-    photo: Optional[UploadFile] = None
     photo_uri: Optional[str] = None
     active_member: Optional[bool] = True
 
 
 class MemberCreate(MemberBase):
+    photo: Optional[UploadFile] = None
     department_ids: List[int]
     pass
 
@@ -39,9 +39,6 @@ class Member(MemberBase):
 
     class Config:
         form_attributes = True
-
-
-from pydantic import BaseModel
 
 
 class BlogBase(BaseModel):
