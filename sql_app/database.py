@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 # env for production
 load_dotenv(".env")
-DATABASE_URL = os.environ["DATABASE_URL"]
+DATABASE_URL = os.environ["POSTGRES_URL"]
 
 
 # connect_args only required for sqlite
