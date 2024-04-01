@@ -17,22 +17,28 @@ department_member_association = Table(
 # SQLAlchemy models
 class Department(Base):
     __tablename__ = "departments"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, unique=True, index=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String, unique=True)
     members = relationship(
-        "Member", secondary=department_member_association, back_populates="departments"
+        "Member",
+        secondary=department_member_association,
+        back_populates="departments",
+        cascade="",
     )
 
 
 class Member(Base):
     __tablename__ = "members"
-    id = Column(Integer, primary_key=True, index=True)
-    name = Column(String, index=True)
+    id = Column(Integer, primary_key=True)
+    name = Column(String(50))
     photo_uri = Column(String)
-    role = Column(String)
+    role = Column(String(25))
     active_member = Column(Boolean)
     departments = relationship(
-        "Department", secondary=department_member_association, back_populates="members"
+        "Department",
+        secondary=department_member_association,
+        back_populates="members",
+        cascade="",
     )
 
 
@@ -43,7 +49,7 @@ class Blog(Base):
 
     __tablename__ = "blogs"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(Integer, primary_key=True)
     title = Column(String(250))
     author = Column(String(50))
     cover_image_uri = Column(String)  # Store the image address

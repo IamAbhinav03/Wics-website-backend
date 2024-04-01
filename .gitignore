@@ -162,3 +162,7 @@ test.py
 data.csv
 .vercel
 *.env*
+blogs.json
+departments.json
+members.json
+todo.txt

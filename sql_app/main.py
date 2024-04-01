@@ -1,7 +1,7 @@
+from typing import List, Annotated
 from fastapi import Depends, APIRouter, UploadFile, File, Form, HTTPException
 from fastapi.responses import FileResponse
 from sqlalchemy.orm import Session
-from typing import List, Annotated
 from . import crud, models, schemas
 from .database import SessionLocal, engine
 
@@ -19,6 +19,7 @@ def get_db():
         db.close()
 
 
+# Department CRUD operations
 @router.post("/departments/", response_model=schemas.Department)
 async def create_department(
     department: schemas.DepartmentCreate, db: Session = Depends(get_db)
@@ -26,11 +27,31 @@ async def create_department(
     return await crud.create_department(db=db, department=department)
 
 
+@router.get("/departments/{department_id}", response_model=schemas.Department)
+async def get_department_by_id(department_id: int, db: Session = Depends(get_db)):
+    return await crud.get_department_by_id(db=db, department_id=department_id)
+
+
 @router.get("/departments/", response_model=List[schemas.Department])
 async def read_departments(
     skip: int = 0, limit: int = 10, db: Session = Depends(get_db)
 ):
     return await crud.get_departments(db=db, skip=skip, limit=limit)
+
+
+@router.put("/departments/{department_id}")
+async def update_department(
+    department_id: int, name: str, db: Session = Depends(get_db)
+):
+    return await crud.update_department(db=db, department_id=department_id, name=name)
+
+
+@router.delete("/departments/{department_id}")
+async def delete_department(department_id: int, db: Session = Depends(get_db)):
+    # print("*" * 10)
+    # print("waiting fro crud operation")
+    # print("*" * 10)
+    return await crud.delete_department(db=db, department_id=department_id)
 
 
 @router.post("/members")
@@ -52,15 +73,15 @@ async def create_member(
     return await crud.create_member(db=db, member=member)
 
 
-@router.get("/members/{photo_name}")
-async def get_member_photo(photo_name: str):
-    path = f"static/{photo_name}"
-    print(path)
-    try:
-        file = FileResponse(path=path)
-        return file
-    except:
-        return {"error": "given path is not a valid path"}
+# @router.get("/members/{photo_name}")
+# async def get_member_photo(photo_name: str):
+#     path = f"static/{photo_name}"
+#     print(path)
+#     try:
+#         file = FileResponse(path=path)
+#         return file
+#     except:
+#         return {"error": "given path is not a valid path"}
 
 
 @router.get("/members/", response_model=List[schemas.Member])
@@ -73,14 +94,29 @@ async def read_members(
         return await crud.get_members(db=db, skip=skip, limit=limit)
 
 
-async def get_members_by_role(db: Session, role: str, skip: int = 0, limit: int = 10):
-    return (
-        db.query(models.Member)
-        .filter(models.Member.role == role)
-        .offset(skip)
-        .limit(limit)
-        .all()
+@router.put("/members/{member_id}")
+async def update_member(
+    member_id: int,
+    name: Annotated[str, Form()],
+    role: Annotated[str, Form()],
+    department_ids: Annotated[List[int], Form()],
+    active_member: Annotated[bool, Form()] = True,
+    photo: Annotated[UploadFile, File()] = None,
+    db: Session = Depends(get_db),
+):
+    member = schemas.MemberCreate(
+        name=name,
+        photo=photo,
+        role=role,
+        department_ids=department_ids,
+        active_member=active_member,
     )
+    return crud.update_member(db=db, member_id=member_id, member=member)
+
+
+@router.delete("/members/{member_id}")
+async def delete_member(member_id: int, db: Session = Depends(get_db)):
+    return await crud.delete_member(db=db, member_id=member_id)
 
 
 # Create a blog
