@@ -14,7 +14,7 @@ from dotenv import load_dotenv
 
 # env for production
 load_dotenv(".env")
-DATABASE_URL = os.environ["POSTGRES_URL"]
+DATABASE_URL = f"postgresql+psycopg2://{os.environ['POSTGRES_USER']}:{os.environ['POSTGRES_PASSWORD']}@{os.environ['POSTGRES_HOST']}/{os.environ['POSTGRES_DATABASE']}"
 
 
 # connect_args only required for sqlite
