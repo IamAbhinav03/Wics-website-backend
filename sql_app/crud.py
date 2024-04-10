@@ -176,7 +176,7 @@ async def get_members_by_role(db: Session, role: str, skip: int = 0, limit: int 
     )
 
 
-def update_member(db: Session, member_id: int, member: schemas.MemberCreate):
+async def update_member(db: Session, member_id: int, member: schemas.MemberCreate):
     db_member = db.query(models.Member).filter(models.Member.id == member_id).first()
     if db_member is None:
         raise HTTPException(status_code=404, detail="Member not found")
