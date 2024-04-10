@@ -133,7 +133,7 @@ async def create_member(
     member: schemas.MemberCreate,
 ):
     if member.photo:
-        photo_uri = photo_upload(
+        photo_uri = await photo_upload(
             file=member.photo, file_name=member.name, upload_folder="uploaded_images"
         )
     else:
@@ -182,7 +182,7 @@ async def update_member(db: Session, member_id: int, member: schemas.MemberCreat
         raise HTTPException(status_code=404, detail="Member not found")
 
     if member.photo:
-        photo_uri = photo_upload(
+        photo_uri = await photo_upload(
             file=member.photo,
             file_name=member.name,
             upload_folder="uploaded_images",
