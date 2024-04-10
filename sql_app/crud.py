@@ -21,7 +21,7 @@ def guess_mime_type(url):
     return guess_type(url, strict=False)[0]
 
 
-def photo_upload(file: UploadFile, file_name: str, upload_folder: str):
+async def photo_upload(file: UploadFile, file_name: str, upload_folder: str):
     file_extension = file.filename.split(".")[-1]
     file_name = f"{upload_folder}/{file_name}.{file_extension}"
     headers = {
@@ -33,7 +33,7 @@ def photo_upload(file: UploadFile, file_name: str, upload_folder: str):
     }
     resp = requests.put(
         f"{VERCEL_API_URL}/{file_name}",
-        data=file.read(),
+        data=await file.read(),
         headers=headers,
         timeout=10,
     )
