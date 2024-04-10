@@ -111,7 +111,7 @@ async def update_member(
         department_ids=department_ids,
         active_member=active_member,
     )
-    return crud.update_member(db=db, member_id=member_id, member=member)
+    return await crud.update_member(db=db, member_id=member_id, member=member)
 
 
 @router.delete("/members/{member_id}")
